@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const todoSchema = new mongoose.Schema(
   {
     text: {
-      // In SQLite, TEXT is already 'long' by default (for the tests)
       type: String,
       required: true
     },
@@ -18,20 +17,21 @@ const todoSchema = new mongoose.Schema(
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      references: {
-        model: 'users',
-        key: 'id'
-      },
-      onDelete: 'CASCADE'
+      ref: 'user'
+      // onDelete: 'CASCADE'
     }
   },
   {
     indexes: [
       // FULLTEXT only exists in MySQL, so disable on SQLite (for the tests)
-      ...(isSqlite ? [] : [{ type: 'FULLTEXT', name: 'text_idx', fields: ['text'] }])
+      ...[{ type: 'FULLTEXT', name: 'text_idx', fields: ['text'] }]
     ]
   }
 );
+
+todoSchema.index({ text: 'text' });
+
+const User = mongoose.model('user', userSchema);
 
 return Todo;
 

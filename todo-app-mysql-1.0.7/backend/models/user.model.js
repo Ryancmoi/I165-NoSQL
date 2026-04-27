@@ -1,12 +1,14 @@
 const mongoose = require('mongoose');
+
+const emailRegex =
+  /^(([^<>()\[\]\.,;:\s@"]+(\.[^<>()\[\]\.,;:\s@"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true
-    // validate: {
-    //   isEmail: true
-    // }
+    unique: true,
+    match: [emailRegex]
   },
   password: {
     type: String,
@@ -25,9 +27,10 @@ const userSchema = new mongoose.Schema({
     type: String
   }
 });
-const User = mongoose.model('User', userSchema);
 
-module.exports = { User };
+const User = mongoose.model('user', userSchema);
+
+module.exports = User;
 
 // module.exports = (sequelize, DataTypes) => {
 //   const User = sequelize.define('user', {
