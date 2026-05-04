@@ -3,19 +3,16 @@ const jsonwebtoken = require('jsonwebtoken');
 
 const { JWT_SECRET } = require('../config/keys');
 
-// remove password from user object
 const cleanUser = (user) => {
-  // eslint-disable-next-line no-unused-vars
-  const { password, ...cleanedUser } = user.get({ plain: true });
+  const { password, ...cleanedUser } = user.toObject();
   return cleanedUser;
 };
 
 const AuthController = {
   loginUser: async (req, res) => {
     const { User } = req.app.locals.models;
-    await User.findOne({
-      where: { email: req.body.email.toLowerCase() }
-    })
+    const email = req.body.email ? req.body.email.toLowerCase() : '';
+    const result = await User.findOne({ email: email })
       .then((result) => {
         if (result) {
           if (bcrypt.compareSync(req.body.password, result.password)) {
