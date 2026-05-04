@@ -1,39 +1,32 @@
 const mongoose = require('mongoose');
 
-const todoSchema = new mongoose.Schema(
-  {
-    text: {
-      type: String,
-      required: true
-    },
-    date: {
-      type: Date,
-      required: true
-    },
-    completed: {
-      type: Boolean,
-      required: true
-    },
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: 'user'
-      // onDelete: 'CASCADE'
-    }
+const todoSchema = new mongoose.Schema({
+  text: {
+    type: String,
+    required: true
   },
-  {
-    indexes: [
-      // FULLTEXT only exists in MySQL, so disable on SQLite (for the tests)
-      ...[{ type: 'FULLTEXT', name: 'text_idx', fields: ['text'] }]
-    ]
+  date: {
+    type: Date,
+    required: true
+  },
+  completed: {
+    type: Boolean,
+    required: true
+  },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'user',
+    index: true
+    // onDelete: 'CASCADE'
   }
-);
+});
 
-todoSchema.index({ text: 'text' });
+todoSchema.index({ text: 'text' }, { name: 'text_idx' });
 
-const User = mongoose.model('user', userSchema);
+const Todo = mongoose.model('todo', todoSchema);
 
-return Todo;
+module.exports = Todo;
 
 // module.exports = (sequelize, DataTypes) => {
 //   const isSqlite = sequelize.getDialect() === 'sqlite';
