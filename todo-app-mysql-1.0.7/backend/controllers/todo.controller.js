@@ -25,11 +25,7 @@ const TodoController = {
     try {
       const result = await Todo.find({ user_id: user_id }).sort({ date: 1 }).select('-user_id');
 
-      if (result && result.length > 0) {
-        return res.status(200).json(result);
-      } else {
-        return res.status(404).send();
-      }
+      return res.status(200).json(result);
     } catch (error) {
       console.error('GET ALL TODO: ', error);
       return res.status(500).send();
