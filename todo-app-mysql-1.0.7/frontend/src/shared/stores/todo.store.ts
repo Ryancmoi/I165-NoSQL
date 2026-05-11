@@ -4,7 +4,7 @@ import { createTodo, deleteTodo, fetchAllTodo, fetchSearchTodo, updateTodo } fro
 import type { ResponseData } from '../helpers';
 
 interface ResponseTodoData {
-  id: number;
+  _id: string;
   date: string;
   text: string;
   completed: boolean;
@@ -28,7 +28,7 @@ export const useTodo = defineStore('todo', {
         const todoResponse = response as unknown as ResponseTodoData;
         // normalize response to Todo (convert date string to Date)
         const todo: Todo = {
-          id: todoResponse.id,
+          _id: todoResponse._id,
           date: new Date(todoResponse.date),
           text: todoResponse.text,
           completed: todoResponse.completed
@@ -49,10 +49,10 @@ export const useTodo = defineStore('todo', {
         if (this.allTodo) {
           // mets à jour le todo dans le tableau
           this.allTodo = this.allTodo.map((todo) =>
-            todo.id === todoResponse.id
+            todo._id === todoResponse._id
               ? {
                   ...todo,
-                  id: todoResponse.id,
+                  _id: todoResponse._id,
                   date: new Date(todoResponse.date),
                   text: todoResponse.text,
                   completed: todoResponse.completed
@@ -67,21 +67,34 @@ export const useTodo = defineStore('todo', {
         const todoResponse = response as unknown as ResponseTodoData;
         if (this.allTodo) {
           // supprime le todo du tableau
-          this.allTodo = this.allTodo.filter((todo) => todo.id !== Number(todoResponse.id));
+          this.allTodo = this.allTodo.filter((todo) => todo._id !== todoResponse._id);
         }
       });
     },
     async fetchAllTodo() {
       this.loading = true;
-      this.allTodo = await fetchAllTodo();
+      const todos = await fetchAllTodo();
+      this.allTodo = todos
+        ? todos.map((todo) => ({
+            _id: todo._id,
+            date: new Date(todo.date),
+            text: todo.text,
+            completed: todo.completed
+          }))
+        : [];
       this.loading = false;
     },
     async fetchSearchTodo(query: string) {
       this.loading = true;
-      this.allTodo = await fetchSearchTodo(query);
-      if(!this.allTodo) {
-        this.allTodo = [];
-      }
+      const todos = await fetchSearchTodo(query);
+      this.allTodo = todos
+        ? todos.map((todo) => ({
+            _id: todo._id,
+            date: new Date(todo.date),
+            text: todo.text,
+            completed: todo.completed
+          }))
+        : [];
       this.loading = false;
     }
   }

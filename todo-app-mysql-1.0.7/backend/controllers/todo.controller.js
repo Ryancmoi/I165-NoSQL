@@ -66,7 +66,7 @@ const TodoController = {
       const result = await Todo.findOneAndDelete({ _id: todo_id, user_id: user_id });
 
       if (result) {
-        return res.status(200).json({ id: todo_id });
+        return res.status(200).json({ _id: todo_id });
       } else {
         return res.status(404).send();
       }

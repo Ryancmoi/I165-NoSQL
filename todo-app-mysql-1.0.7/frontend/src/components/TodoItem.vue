@@ -17,7 +17,7 @@ const props = defineProps({
     required: true
   },
   todoId: {
-    type: Number,
+    type: String,
     required: true
   },
   todoCompleted: {
