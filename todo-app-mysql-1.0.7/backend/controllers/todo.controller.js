@@ -1,8 +1,16 @@
+const cleanTodo = (todo) => {
+  const todoObj = todo.toObject ? todo.toObject() : todo;
+  const { user_id, __v, ...cleanedTodo } = todoObj;
+  return cleanedTodo;
+};
+
 const TodoController = {
   createTodo: async (req, res) => {
     const user_id = req.sub;
     const { text, date } = req.body;
     const { Todo } = req.app.locals.models;
+    const redis = req.app.locals.redis;
+    const cacheKey = `todos:${user_id}`;
 
     try {
       const result = await Todo.create({
@@ -11,7 +19,12 @@ const TodoController = {
         completed: false,
         user_id: user_id
       });
-      return res.status(201).json(result);
+
+      if (redis) {
+        await redis.del(cacheKey);
+      }
+
+      return res.status(201).json(cleanTodo(result));
     } catch (error) {
       console.error('ADD TODO: ', error);
       return res.status(500).send();
@@ -21,11 +34,25 @@ const TodoController = {
   getAllTodo: async (req, res) => {
     const user_id = req.sub;
     const { Todo } = req.app.locals.models;
+    const redis = req.app.locals.redis;
+    const cacheKey = `todos:${user_id}`;
 
     try {
-      const result = await Todo.find({ user_id: user_id }).sort({ date: 1 }).select('-user_id');
+      if (redis) {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return res.status(200).json(JSON.parse(cached));
+        }
+      }
 
-      return res.status(200).json(result);
+      const result = await Todo.find({ user_id: user_id }).sort({ date: 1 }).select('-user_id');
+      const cleanedResult = result.map(todo => cleanTodo(todo));
+
+      if (redis) {
+        await redis.setEx(cacheKey, 300, JSON.stringify(cleanedResult));
+      }
+
+      return res.status(200).json(cleanedResult);
     } catch (error) {
       console.error('GET ALL TODO: ', error);
       return res.status(500).send();
@@ -37,6 +64,8 @@ const TodoController = {
     const todo_id = req.params.id;
     const data = req.body;
     const { Todo } = req.app.locals.models;
+    const redis = req.app.locals.redis;
+    const cacheKey = `todos:${user_id}`;
 
     try {
       const result = await Todo.findOne({ _id: todo_id, user_id: user_id });
@@ -47,7 +76,12 @@ const TodoController = {
         result.date = data.date ? data.date : result.date;
 
         await result.save();
-        return res.status(200).json(result);
+
+        if (redis) {
+          await redis.del(cacheKey);
+        }
+
+        return res.status(200).json(cleanTodo(result));
       } else {
         return res.status(404).send();
       }
@@ -61,11 +95,17 @@ const TodoController = {
     const user_id = req.sub;
     const todo_id = req.params.id;
     const { Todo } = req.app.locals.models;
+    const redis = req.app.locals.redis;
+    const cacheKey = `todos:${user_id}`;
 
     try {
       const result = await Todo.findOneAndDelete({ _id: todo_id, user_id: user_id });
 
       if (result) {
+        if (redis) {
+          await redis.del(cacheKey);
+        }
+
         return res.status(200).json({ _id: todo_id });
       } else {
         return res.status(404).send();
@@ -90,7 +130,7 @@ const TodoController = {
         .select('-user_id');
 
       if (result && result.length > 0) {
-        return res.status(200).json(result);
+        return res.status(200).json(result.map(todo => cleanTodo(todo)));
       } else {
         return res.status(404).send();
       }
