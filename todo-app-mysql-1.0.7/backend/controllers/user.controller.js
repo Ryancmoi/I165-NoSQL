@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 
 const cleanUser = (user) => {
   const userObj = user.toObject ? user.toObject() : user;
-  const { password, ...cleanedUser } = userObj;
+  const { password, __v, ...cleanedUser } = userObj;
   return cleanedUser;
 };
 
@@ -33,7 +33,7 @@ const UserController = {
     const { User } = req.app.locals.models;
 
     try {
-      const result = await User.findOne({ _id: user_id }).select('-password');
+      const result = await User.findOne({ _id: user_id }).select('-password -__v');
 
       if (result) {
         return res.status(200).json({ user: result });
@@ -73,9 +73,10 @@ const UserController = {
 
   deleteCurrentUser: async (req, res) => {
     const user_id = req.sub;
-    const { User } = req.app.locals.models;
+    const { User, Todo } = req.app.locals.models;
 
     try {
+      await Todo.deleteMany({ user_id: user_id });
       const result = await User.findOneAndDelete({ _id: user_id });
 
       if (result) {
