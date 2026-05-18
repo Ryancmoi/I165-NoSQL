@@ -8,10 +8,6 @@ db.createUser({
       role: "dbOwner",
       db: "db_todoapp",
     },
-    {
-      role: "createIndex",
-      db: "db_todoapp",
-    },
   ],
 });
 
