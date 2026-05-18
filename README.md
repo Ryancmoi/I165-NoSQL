@@ -50,10 +50,10 @@ cp .env.example .env
 # MongoDB
 MONGO_ROOT_USERNAME=root
 MONGO_ROOT_PASSWORD=secure_root_password
-MONGO_URI=mongodb://root:secure_root_password@localhost:27017/db_todoapp?authSource=admin
+MONGO_URI=mongodb://root:secure_root_password@localhost:27017/db_name?authSource=admin
 
 # Application Backend
-MONGODB_URI=mongodb://app_backend:app_backend_password@localhost:27017/db_todoapp?authSource=db_todoapp
+MONGODB_URI=mongodb://app_backend:app_backend_password@localhost:27017/db_name?authSource=db_name
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_PASSWORD=redis_password
@@ -97,7 +97,7 @@ cd backend
 npm run dev
 ```
 
-#### 6. Démarrer le frontend (optionnel pour dev)
+#### 6. Démarrer le frontend
 
 ```bash
 cd frontend
@@ -108,16 +108,63 @@ Le site sera disponible à l'adresse `http://localhost:5173`
 
 ## Permissions MongoDB (point 2.1)
 
+Les utilisateurs avec leurs permissions sont créés automatiquement via `/docker-entrypoint-initdb.d/mongo-init.js`
+
+#### **Utilisateur 1 : `app_backend`**
+
+- Mot de passe : `app_backend_password`
+- Base de données : `db_name`
+- Permissions :
+  - `dbOwner` : Hérite de 3 roles qui sont : readWrite, dbAdmin, userAdmin
+    - Créer des collections
+    - Créer/modifier des index
+    - CRUD
+    - Modifications de schémas
+    - Gestion de roles
+
+#### **Utilisateur 2 : `admin_app`**
+
+- Mot de passe : `admin_app_password`
+- Base de données : `db_name`
+- Permissions :
+  - `dbAdmin` : Admin de la database
+    - Créer des index
+    - Voir les statistiques
+    - Modifications de schémas
+  - `userAdmin` : Gérer les utilisateurs
+    - Créer/modifier/supprimer les utilisateurs dans la database
+
+#### **Utilisateur 3 : `backup_user`**
+
+- Mot de passe : `backup_user_password`
+- Permissions :
+  - `readAnyDatabase` : Lecture seule globale
+    - Peut lire toutes les databases
+    - Ne peut pas modifier les données
+
 ## Backup base de données (point 2.2)
 
-```bash
-docker-compose exec mongo mongodump --uri "mongodb://admin_user:admin_pwd@localhost:27017/db_todoapp?authSource=admin" --out="./backupdb/backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')" --gzip
-```
+La commande suivante réalise une sauvegarde complète de la base de données avec l'année, le mois, le jour, l'heure, la minute, la secondes comme nom de backup tout en compressant les données :
 
 ```bash
-docker-compose exec mongo mongorestore --uri "mongodb://admin_user:admin_pwd@localhost:27017/db_todoapp?authSource=admin" --gzip ./backupdb/backup_20260518_090918
+docker-compose exec mongo mongodump --uri "mongodb://user_name:admin_password@localhost:27017/db_name?authSource=admin" --out="./backupdb/backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')" --gzip
+```
+
+- `--uri` URI de connexion avec credentials de l'utilisateur `backup_user`
+- `--out=./backup_$(date ...)` Dossier de sortie avec la date
+- `--gzip` Compression GZIP qui réduit la taille de la backup
+- `--db db_todoapp` Sauvegarde uniquement la base de l'application
+
+La commande restaure les données à partir d'une backup réalisée à l'aide de la commande ci-dessus :
+
+```bash
+docker-compose exec mongo mongorestore --uri "mongodb://user_name:admin_password@localhost:27017/db_name?authSource=admin" --gzip ./backupdb/backup_yyyyMMdd_HHmmss
 ```
 
 ## Usage de lʼIA
 
+J'ai utilisé l'IA au début pour m'aider à comprendre la structure de l'app et le fonctionnement d'Express, puis je l'ai principalement utilisée pour Redis car j'ai trouvé que la documentation en ligne sur Redis était très limitée, ce qui m'a énormément freiné et m'a obligé à recourir à l'IA. Finalement, je l'ai utilisée pour le README.md : je marquais tout le texte de façon « brute », puis je l'organisais par chapitre et après avoir tout noté, j'ai sollicité l'IA pour rendre mes explications les plus claires possible.
+
 ## Conclusion
+
+En conclusion, j'ai trouvé ce projet bien plus exigeant que sa pondération de 24 périodes ne le laissait supposer. Sa difficulté provenait de plusieurs facteurs : la découverte de l'application en début de projet, la compréhension en simultané de Sequelize et l'apprentissage de Redis, et un contenu de module que je trouve peu en rapport avec ce projet. Cependant, ces défis m'ont poussé à me former et à m'auto-documenter, ce qui n'a pas été du temps perdu. Je ressors de ce projet avec de meilleurs connaissances sur la migration d'un ORM relationnel vers une base de données non-relationnelle, une compétence qui me sera peut-être utile dans le futur.
